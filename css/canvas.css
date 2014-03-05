@@ -1,0 +1,15 @@
+canvas {
+  position:absolute;
+  top: 0px;
+  left: 0px;
+}
+canvas.onion{
+  opacity: 0.2;
+}
+canvas#current-layer {
+}
+canvas#buffer-layer {
+}
+#animation {
+	overflow: hidden;
+}
