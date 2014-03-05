@@ -21,6 +21,7 @@ Animation.prototype.drawBotLayers = function() {
   this.clearCanvas(this.contexts.botFrames);
 };
 
+// possible factor out
 Animation.prototype.drawCurrentLayer = function() {
   this.clearCanvas(this.contexts.current);
 
@@ -65,6 +66,7 @@ Animation.prototype.drawOnionLayers = function() {
   if (this.contexts.prevOnion.canvas.style.opacity > 0) { this.drawPrevOnion(); }
 };
 
+// refactor onion logic to pass in onion context to drawOnionLayer
 Animation.prototype.drawNextOnion = function() {
   this.clearCanvas(this.contexts.nextOnion);
   var frame = this.frames[this.state.frame.index + 1]
@@ -109,6 +111,7 @@ Animation.prototype.normalizePosition = function(position) {
   }
 }
 
+// todo, refactor listeners out
 Animation.prototype.setupBufferListeners = function(canvas) {
   var that = this;
 
@@ -131,12 +134,10 @@ Animation.prototype.setupBufferListeners = function(canvas) {
   });
 
   canvas.addEventListener('keydown', function(e) {
-    console.log(e.which);
     if (e.metaKey) {
       switch (e.which) {
         case 187: //ctrl +
           that.resizeView(that.state.view.x, that.state.view.y, that.state.view.width * 1.25, that.state.view.height * 1.25);
-          console.log("yes")
           e.preventDefault();
           break;
         case 189: //ctrl -
@@ -144,11 +145,26 @@ Animation.prototype.setupBufferListeners = function(canvas) {
           e.preventDefault();
           break;
       }
+    } else if (e.shiftKey) {
+      switch (e.which) {
+      case 187: // +
+        that.addFrame(that.frames.length);
+        break;
+      case 188: // <
+        that.prevFrame();
+        break;
+      case 190: // >
+        that.nextFrame();
+        break;
+      default:
+        console.log(e.which)
+        break;
+    }
     } else {
       switch (e.which) {
         case 37: // left
 
-          // use that.contexts.current.canvas.clientWidth for width in pixels
+          // todo, use that.contexts.current.canvas.clientWidth for width in pixels
 
           break;
         case 38: // up
@@ -157,6 +173,7 @@ Animation.prototype.setupBufferListeners = function(canvas) {
           break;
         case 40: // down
           break;
+
       }
     }
   });
@@ -165,20 +182,7 @@ Animation.prototype.setupBufferListeners = function(canvas) {
   });
 
   canvas.addEventListener('keypress', function(e) {
-    switch (e.which) {
-      case 43: // +
-        that.addFrame(that.frames.length);
-        break;
-      case 60: // <
-        that.prevFrame();
-        break;
-      case 62: // >
-        that.nextFrame();
-        break;
-      default:
-        console.log(e.which)
-        break;
-    }
+
   })
 }
 
@@ -216,7 +220,9 @@ Animation.prototype.resizeView = function(x, y, width, height) {
 
 Animation.prototype.setupCanvas = function(selector) {
   var el = document.getElementById(selector);
+  // todo refactor
   el.innerHTML = '<div id="layers"><canvas id="top-layers"></canvas><canvas id="buffer-layer"></canvas><canvas id="current-layer"></canvas><canvas id="bot-layers"></canvas></div><div id="onion-layer"><canvas class="onion" id="prev-onion"></canvas><canvas class="onion" id="next-onion"></canvas></div>'
+
   this.contexts = {
     buffer: document.getElementById('buffer-layer').getContext('2d'),
     topFrames: document.getElementById('top-layers').getContext('2d'),
@@ -225,23 +231,12 @@ Animation.prototype.setupCanvas = function(selector) {
     nextOnion: document.getElementById('next-onion').getContext('2d'),
     prevOnion: document.getElementById('prev-onion').getContext('2d')
   }
-}
+};
 
-Animation.prototype.init = function(options) {
-  this.setupCanvas(options.selector)
-
-  this.history = [];
-  this.frames = [new Frame()];
-  this.setOnionSettings({next: {opacity: 0.25}, prev: {opacity: 0.25}});
-  
-  this.nextStep();
-
+Animation.prototype.setupState = function(options) {
   this.state = {
     mouse: {
       down: false
-    },
-    keys: {
-
     },
     frame: {
       current: this.frames[0],
@@ -254,7 +249,9 @@ Animation.prototype.init = function(options) {
       height: 1
     }
   }
+};
 
+Animation.prototype.setupSettings = function(options) {
   this.settings = {
     history: {
       max: 100,
@@ -267,6 +264,18 @@ Animation.prototype.init = function(options) {
       height: 100
     }
   }
+}
+
+Animation.prototype.init = function(options) {
+  this.setupCanvas(options.selector)
+
+  this.history = [];
+  this.frames = [new Frame()];
+  this.setOnionSettings({next: {opacity: 0.25}, prev: {opacity: 0.25}});
+  
+  this.nextStep();
+  this.setupState(options);
+  this.setupSettings(options)
 
   this.resizeCanvas(window.innerWidth, window.innerHeight);
   this.setupBufferListeners(document);
@@ -287,7 +296,7 @@ Animation.prototype.goToFrame = function(index) {
 
     this.drawLayers();
 
-    console.log((this.state.frame.index + 1) + "/" + this.frames.length);
+    this.frameCount();
 }
 
 Animation.prototype.prevFrame = function() {
@@ -311,11 +320,12 @@ Animation.prototype.addFrame = function(index) {
     ++this.state.frame.index; 
   }
 
-  console.log((this.state.frame.index + 1) + "/" + this.frames.length);
+  this.frameCount();
 }
 
+// todo, probably should be moved out to tool
 Animation.prototype.clear = function(posX, posY, width, height) {
-  
+
 }
 
 Animation.prototype.copy = function(posX, posY, width, height) {
@@ -325,19 +335,19 @@ Animation.prototype.copy = function(posX, posY, width, height) {
 Animation.prototype.crop = function(posX, posY, width, height) {
   this.copy(posX, posY, width, height);
   this.clear(posX, posY, width, height);
-}
+};
 
 Animation.prototype.flattenHistory = function() {
   
-}
+};
 
 Animation.prototype.export = function(filetype) {
   // export file
-}
+};
 
 Animation.prototype.frameCount = function() {
   console.log((this.state.frame.index + 1) + "/" + this.frames.length);
-}
+};
 
 Animation.prototype.play = function(options) {
   if (!this.playInterval) {
@@ -356,11 +366,11 @@ Animation.prototype.play = function(options) {
       }
     }, delay);  
   }
-}
+};
 
 Animation.prototype.stop = function() {
   if (this.playInterval) {
     clearInterval(this.playInterval);
     this.playInterval = null;
   }
-}
+};

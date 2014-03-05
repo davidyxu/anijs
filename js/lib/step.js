@@ -3,6 +3,7 @@ function Step(currentContext) { // history step
   this.points = [];
 }
 
+// how to save best save tool config if on context
 Step.prototype.setTool = function(tool) {
   this.tool = new tool.constructor(this.currentContext, tool.config)
 }
@@ -15,3 +16,4 @@ Step.prototype.complete = function(data) {
   this.points.push(data);
   this.tool.replay(this.points);
 }
+// will also need to record frame + layer

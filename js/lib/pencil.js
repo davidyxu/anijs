@@ -37,3 +37,7 @@ Pencil.prototype.replay = function(points) {
   }
   this.context.stroke();
 }
+
+Pencil.prototype.applyConfig = function() {
+  this.context // todo, apply settings
+}
