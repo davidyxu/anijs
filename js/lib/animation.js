@@ -162,6 +162,9 @@ Animation.prototype.setupBufferListeners = function(canvas) {
     }
     } else {
       switch (e.which) {
+        case 32: // space
+          that.togglePlay({repeat: true})
+          break;
         case 37: // left
 
           // todo, use that.contexts.current.canvas.clientWidth for width in pixels
@@ -172,6 +175,9 @@ Animation.prototype.setupBufferListeners = function(canvas) {
         case 39: // right
           break;
         case 40: // down
+          break;
+        default:
+          console.log(e.which);
           break;
 
       }
@@ -235,6 +241,7 @@ Animation.prototype.setupCanvas = function(selector) {
 
 Animation.prototype.setupState = function(options) {
   this.state = {
+    playing: null,
     mouse: {
       down: false
     },
@@ -346,22 +353,32 @@ Animation.prototype.export = function(filetype) {
 };
 
 Animation.prototype.frameCount = function() {
-  console.log((this.state.frame.index + 1) + "/" + this.frames.length);
+  if (!this.state.playing) {
+    console.log((this.state.frame.index + 1) + "/" + this.frames.length);
+  }
 };
 
+Animation.prototype.togglePlay = function(options) {
+  if (this.state.playing) {
+    this.stop();
+  } else {
+    this.play(options);
+  }
+}
+
 Animation.prototype.play = function(options) {
-  if (!this.playInterval) {
+  if (!this.state.playing) {
     var delay = 1000 / (options.fps || 30) // ms delay
-    var i = 0;
+    var i = this.state.frame.index;
 
     var that = this;
-    this.playInterval = setInterval(function() {
+    this.state.playing = setInterval(function() {
       that.goToFrame(i);
       if (++i >= that.frames.length) {
         if (options.repeat) {
           i = 0;
         } else {
-          clearInterval(that.playInterval);
+          clearInterval(that.state.playing);
         }
       }
     }, delay);  
@@ -369,8 +386,8 @@ Animation.prototype.play = function(options) {
 };
 
 Animation.prototype.stop = function() {
-  if (this.playInterval) {
-    clearInterval(this.playInterval);
-    this.playInterval = null;
+  if (this.state.playing) {
+    clearInterval(this.state.playing);
+    this.state.playing = null;
   }
 };
