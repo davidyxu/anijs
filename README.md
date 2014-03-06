@@ -29,6 +29,7 @@ a 2d animation app made with html5 canvas and javascript
 - music
   * start music on frame
   * how to export
+  * add frequency bar
 - panning
   * baked in view settings in playback
 - backend server
@@ -48,5 +49,7 @@ a 2d animation app made with html5 canvas and javascript
   * https://github.com/antimatter15/whammy
 - Brushes
   * http://jsfiddle.net/c5F6Q/8/
+- Audio
+  * http://blog.teamtreehouse.com/building-a-synthesizer-with-the-web-audio-api
 - Performance
   * http://jsperf.com/fastest-canvas-drawing/2
