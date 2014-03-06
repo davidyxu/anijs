@@ -57,9 +57,17 @@ Animation.prototype.applyFilter = function(context, frame, options) {
   context.putImageData(imageData, 0, 0);
 };
 Animation.prototype.setOnionSettings = function(options) {
-  this.contexts.nextOnion.canvas.style.opacity = options.next.opacity;
-  this.contexts.prevOnion.canvas.style.opacity = options.prev.opacity;
+  this.settings.onion = options || this.settings.onion;
+
+  this.contexts.nextOnion.canvas.style.opacity = this.settings.onion.next.opacity;
+  this.contexts.prevOnion.canvas.style.opacity = this.settings.onion.prev.opacity;
 }
+
+Animation.prototype.muteOnionLayers = function() {
+  this.contexts.nextOnion.canvas.style.opacity = 0;
+  this.contexts.prevOnion.canvas.style.opacity = 0;
+}
+
 
 Animation.prototype.drawOnionLayers = function() {
   if (this.contexts.nextOnion.canvas.style.opacity > 0) { this.drawNextOnion(); }
@@ -96,7 +104,8 @@ Animation.prototype.processEvent = function(results) {
     }
 
     if (results.complete) {
-      this.currentStep.complete(results.data);
+      this.currentStep.add(results.data);
+      this.currentStep.replay();
       this.nextStep();
     } else {
       this.currentStep.add(results.data);
@@ -106,8 +115,8 @@ Animation.prototype.processEvent = function(results) {
 
 Animation.prototype.normalizePosition = function(position) {
   return {
-    x: (position.x - this.contexts.buffer.canvas.offsetLeft + pageXOffset) / this.state.view.width,
-    y: (position.y - this.contexts.buffer.canvas.offsetTop + pageYOffset) / this.state.view.height
+    x: (position.x - this.contexts.buffer.canvas.offsetLeft + pageXOffset) / this.state.view.factor,
+    y: (position.y - this.contexts.buffer.canvas.offsetTop + pageYOffset) / this.state.view.factor
   }
 }
 
@@ -133,15 +142,17 @@ Animation.prototype.setupBufferListeners = function(canvas) {
     }
   });
 
+  // add event listener for view change
+
   canvas.addEventListener('keydown', function(e) {
     if (e.metaKey) {
       switch (e.which) {
         case 187: //ctrl +
-          that.resizeView(that.state.view.x, that.state.view.y, that.state.view.width * 1.25, that.state.view.height * 1.25);
+          that.changeView(that.state.view.x, that.state.view.y, that.state.view.factor * 1.25);
           e.preventDefault();
           break;
         case 189: //ctrl -
-          that.resizeView(that.state.view.x, that.state.view.y, that.state.view.width * 0.75, that.state.view.height * 0.75);
+          that.changeView(that.state.view.x, that.state.view.y, that.state.view.factor * 0.75);
           e.preventDefault();
           break;
       }
@@ -161,35 +172,96 @@ Animation.prototype.setupBufferListeners = function(canvas) {
         break;
     }
     } else {
+      console.log(that.state.view)
       switch (e.which) {
         case 32: // space
           that.togglePlay({repeat: true})
           break;
         case 37: // left
-
           // todo, use that.contexts.current.canvas.clientWidth for width in pixels
-
+          that.state.keys.left = true;
           break;
         case 38: // up
+          that.state.keys.up = true;
           break;
         case 39: // right
+          that.state.keys.right = true;
           break;
         case 40: // down
+          that.state.keys.down = true;
           break;
         default:
           console.log(e.which);
           break;
-
       }
     }
   });
 
-  canvas.addEventListener('keyup', function(e) {
+  canvas.addEventListener('keypress', function(e) {
   });
 
-  canvas.addEventListener('keypress', function(e) {
+  canvas.addEventListener('keyup', function(e) {
+    switch (e.which) {
+      case 32: // space
+        break;
+      case 37: // left
+        that.state.keys.left = false;
+        break;
+      case 38: // up
+        that.state.keys.up = false;
+        break;
+      case 39: // right
+        that.state.keys.right = false;
+        break;
+      case 40: // down
+        that.state.keys.down = false;
+        break;
+      }
+  });
 
-  })
+  var x = 0,
+      y = 0,
+      speed = 10;
+
+  setInterval(function() {
+    if (that.state.keys.left) {
+      x = -speed;
+    } else if (that.state.keys.right) {
+      x = speed;
+    } else {
+      x = 0;
+    }
+    if (that.state.keys.up) {
+      y = -speed;
+    } else if (that.state.keys.down) {
+      y = speed;
+    } else {
+      y = 0;
+    }
+
+    if (x || y) {
+      that.changeView(that.state.view.x + x, that.state.view.y + y, that.state.view.factor);
+    }
+  }, 50);
+}
+
+Animation.prototype.boundedViews = function(x, y) {
+  if (x + this.container.offsetWidth > this.contexts.current.canvas.clientWidth) {
+    x = this.contexts.current.canvas.clientWidth - this.container.offsetWidth;
+  }
+
+  if (y + this.container.offsetHeight > this.contexts.current.canvas.clientHeight) {
+    y = this.contexts.current.canvas.clientHeight - this.container.offsetHeight;
+  }
+
+  if (x < 0) {
+    x = 0;
+  }
+  if (y < 0) {
+    y = 0;
+  }
+
+  return {x: x, y: y}
 }
 
 Animation.prototype.nextStep = function() {
@@ -210,24 +282,29 @@ Animation.prototype.resizeCanvas = function(width, height) {
   this.drawLayers();
 }
 
-Animation.prototype.resizeView = function(x, y, width, height) {
-   for (var context in this.contexts) {
-    this.contexts[context].canvas.style.top = "-" + y + "px";
-    this.contexts[context].canvas.style.left = "-" + x + "px";
-    this.contexts[context].canvas.style.width = width * 100 + "%";
-    this.contexts[context].canvas.style.height = height * 100 + "%"; 
+Animation.prototype.changeView = function(x, y, factor) {
+  if (this.state.view.factor != factor) {
+    for (var context in this.contexts) {
+      this.contexts[context].canvas.style.width = factor * this.contexts[context].canvas.width + "px";
+      this.contexts[context].canvas.style.height = factor * this.contexts[context].canvas.height + "px"; 
+    }
+    this.state.view.factor = factor;  
+  }
+  
+  boundedPosition = this.boundedViews(x, y)
+  for (var context in this.contexts) {
+    this.contexts[context].canvas.style.top = "-" + boundedPosition.y + "px";
+    this.contexts[context].canvas.style.left = "-" + boundedPosition.x + "px";
   }
 
-  this.state.view.x = x;
-  this.state.view.y = y;
-  this.state.view.width = width;
-  this.state.view.height = height;
+  this.state.view.x = boundedPosition.x;
+  this.state.view.y = boundedPosition.y;
 }
 
 Animation.prototype.setupCanvas = function(selector) {
-  var el = document.getElementById(selector);
+  this.container = document.getElementById(selector);
   // todo refactor
-  el.innerHTML = '<div id="layers"><canvas id="top-layers"></canvas><canvas id="buffer-layer"></canvas><canvas id="current-layer"></canvas><canvas id="bot-layers"></canvas></div><div id="onion-layer"><canvas class="onion" id="prev-onion"></canvas><canvas class="onion" id="next-onion"></canvas></div>'
+  this.container.innerHTML = '<div id="layers"><canvas id="top-layers"></canvas><canvas id="buffer-layer"></canvas><canvas id="current-layer"></canvas><canvas id="bot-layers"></canvas></div><div id="onion-layer"><canvas class="onion" id="prev-onion"></canvas><canvas class="onion" id="next-onion"></canvas></div>'
 
   this.contexts = {
     buffer: document.getElementById('buffer-layer').getContext('2d'),
@@ -245,15 +322,20 @@ Animation.prototype.setupState = function(options) {
     mouse: {
       down: false
     },
+    keys: {
+      left: false,
+      right: false,
+      up: false,
+      down: false
+    },
     frame: {
       current: this.frames[0],
       index: 0
     },
     view: {
-      top: 0,
-      left: 0,
-      width: 1,
-      height: 1
+      x: 0,
+      y: 0,
+      factor: 1
     }
   }
 };
@@ -269,22 +351,27 @@ Animation.prototype.setupSettings = function(options) {
       y: 0,
       width: 100,
       height: 100
+    },
+    onion: {
+      next: {opacity: 0.25},
+      prev: {opacity: 0.25}
     }
   }
 }
 
 Animation.prototype.init = function(options) {
-  this.setupCanvas(options.selector)
+  this.setupCanvas(options.selector);
 
-  this.history = [];
   this.frames = [new Frame()];
-  this.setOnionSettings({next: {opacity: 0.25}, prev: {opacity: 0.25}});
-  
-  this.nextStep();
-  this.setupState(options);
-  this.setupSettings(options)
 
-  this.resizeCanvas(window.innerWidth, window.innerHeight);
+  this.setupState(options);
+  this.setupSettings(options);
+  this.setOnionSettings();
+
+  this.history = [];  
+  this.nextStep();
+
+  this.resizeCanvas(options.width || window.innerWidth, options.height || window.innerHeight);
   this.setupBufferListeners(document);
   this.setTool(Pencil);
 };
@@ -368,6 +455,9 @@ Animation.prototype.togglePlay = function(options) {
 
 Animation.prototype.play = function(options) {
   if (!this.state.playing) {
+    if (!options.onion) {
+      this.muteOnionLayers();
+    }
     var delay = 1000 / (options.fps || 30) // ms delay
     var i = this.state.frame.index;
 
@@ -379,6 +469,7 @@ Animation.prototype.play = function(options) {
           i = 0;
         } else {
           clearInterval(that.state.playing);
+          this.setOnionSettings();
         }
       }
     }, delay);  

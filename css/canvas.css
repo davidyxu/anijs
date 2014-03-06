@@ -2,6 +2,7 @@ canvas {
   position:absolute;
   top: 0px;
   left: 0px;
+  overflow: hidden;
 }
 canvas.onion{
   opacity: 0.2;
@@ -9,7 +10,25 @@ canvas.onion{
 canvas#current-layer {
 }
 canvas#buffer-layer {
+
 }
+
+canvas#full-view {
+  position:absolute;
+  border: 1px solid black;
+  right: 0px;
+  top: 0px;
+}
+
 #animation {
-	overflow: hidden;
+  top:0px;
+  left: 0px;
+  position: relative;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  margin: 0px;
 }
