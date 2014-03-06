@@ -468,17 +468,15 @@ Animation.prototype.play = function(options) {
         if (options.repeat) {
           i = 0;
         } else {
-          clearInterval(that.state.playing);
-          this.setOnionSettings();
+          this.stop();
         }
       }
-    }, delay);  
+    }, delay);
   }
 };
 
 Animation.prototype.stop = function() {
-  if (this.state.playing) {
-    clearInterval(this.state.playing);
-    this.state.playing = null;
-  }
+  clearInterval(this.state.playing);
+  this.setOnionSettings();
+  this.state.playing = null;
 };
