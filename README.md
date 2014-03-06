@@ -5,8 +5,14 @@ a 2d animation app made with html5 canvas and javascript
 
 ###todos
 
+#####immediate todos
+- move history to frame
+- refactor tools
+- factor ui related code to another object
+
+#####future plans
+
 - history
-  * undo/redo
   * history flattening
 - layers
   * how many layers to support?
@@ -31,6 +37,9 @@ a 2d animation app made with html5 canvas and javascript
 - local storage
   * save brush settings
   * possibly persist projects?
+- code organization
+  * use require js
+
 
 ###links of interest
 
