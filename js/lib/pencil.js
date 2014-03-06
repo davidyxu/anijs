@@ -1,9 +1,6 @@
 function Pencil(context, config) {
   this.context = context;
   this.config = config;
-
-  this.context.translate(0.5, 0.5);
-  this.context.lineWidth = 1;
 }
 
 
